@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by shmilylhg on 2016/5/30.
+ * Created by ComposerQ on 2016/5/30.
  */
 public class WeatherReportDB {
 

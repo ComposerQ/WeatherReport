@@ -1,7 +1,7 @@
 package com.rabbit.weatherreport.model;
 
 /**
- * Created by shmilylhg on 2016/5/30.
+ * Created by ComposerQ on 2016/5/30.
  */
 public class Country {
     private int id;
