@@ -29,12 +29,12 @@ public class WeatherReportOpenHelper extends SQLiteOpenHelper {
             + "province_id integer)";
 
     /**
-     * Country表建立
+     * County表建立
      */
-    public static final String CREATE_COUNTRY = "create table Country ("
+    public static final String CREATE_COUNTY = "create table County ("
             + "id integer primary key autoincrement,"
-            + "country_name text,"
-            + "country_code text,"
+            + "county_name text,"
+            + "county_code text,"
             + "city_id integer)";
 
     public WeatherReportOpenHelper(Context context,String name,SQLiteDatabase.CursorFactory factory,
@@ -46,7 +46,7 @@ public class WeatherReportOpenHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(CREATE_PROVINCE);
         db.execSQL(CREATE_CITY);
-        db.execSQL(CREATE_COUNTRY);
+        db.execSQL(CREATE_COUNTY);
     }
 
     @Override
