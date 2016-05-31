@@ -10,7 +10,7 @@ import com.rabbit.weatherreport.model.WeatherReportDB;
 /**
  * Created by ComposerQ on 2016/5/30.
  */
-public class Utillity {
+public class Utility {
 
     /**
      * 解析和处理服务器返回的省级数据

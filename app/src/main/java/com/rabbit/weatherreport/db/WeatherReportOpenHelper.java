@@ -26,7 +26,7 @@ public class WeatherReportOpenHelper extends SQLiteOpenHelper {
             + "id integer primary key autoincrement,"
             + "city_name text,"
             + "city_code text,"
-            + "province integer)";
+            + "province_id integer)";
 
     /**
      * Country表建立
@@ -34,7 +34,7 @@ public class WeatherReportOpenHelper extends SQLiteOpenHelper {
     public static final String CREATE_COUNTRY = "create table Country ("
             + "id integer primary key autoincrement,"
             + "country_name text,"
-            + "country_code,"
+            + "country_code text,"
             + "city_id integer)";
 
     public WeatherReportOpenHelper(Context context,String name,SQLiteDatabase.CursorFactory factory,

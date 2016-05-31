@@ -3,18 +3,22 @@ package com.rabbit.weatherreport.activity;
 import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.view.View;
-import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.rabbit.weatherreport.R;
 import com.rabbit.weatherreport.model.City;
 import com.rabbit.weatherreport.model.Country;
 import com.rabbit.weatherreport.model.Province;
 import com.rabbit.weatherreport.model.WeatherReportDB;
+import com.rabbit.weatherreport.util.HttpCallbackListener;
+import com.rabbit.weatherreport.util.HttpUtil;
+import com.rabbit.weatherreport.util.Utility;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,7 +68,6 @@ public class ChooseAreaActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.choose_area);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
         mListView = (ListView)findViewById(R.id.list_view);
         mTitleText = (TextView)findViewById(R.id.title_text);
         adapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,dataList);
@@ -101,7 +104,7 @@ public class ChooseAreaActivity extends AppCompatActivity {
             mTitleText.setText("中国");
             currentLevel = LEVEL_PROVINCE;
         } else {
-            queryFromServer(null,"province");
+            queryFromServer(null, "province");
         }
     }
 
@@ -109,12 +112,38 @@ public class ChooseAreaActivity extends AppCompatActivity {
      * 查询选中省内所有的市，优先从数据库查询，如果没有查询到再去服务器上查询
      */
     private void queryCities() {
+        cityList = weatherReportDB.loadCities(selectedProvince.getId());
+        if (cityList.size() > 0) {
+            dataList.clear();
+            for (City city : cityList) {
+                dataList.add(city.getCityName());
+            }
+            adapter.notifyDataSetChanged();
+            mListView.setSelection(0);
+            mTitleText.setText(selectedProvince.getProvinceName());
+            currentLevel = LEVEL_CITY;
+        } else {
+            queryFromServer(selectedProvince.getProvinceCode(),"city");
+        }
     }
 
     /**
      * 查询选中市内所有的县，优先从数据库查询，如果没有查询到在再去服务器上查询
      */
     private void queryCounties() {
+        countryList = weatherReportDB.loadCountries(selectedCity.getId());
+        if (countryList.size() > 0) {
+            dataList.clear();
+            for (Country country : countryList) {
+                dataList.add(country.getCountryName());
+            }
+            adapter.notifyDataSetChanged();
+            mListView.setSelection(0);
+            mTitleText.setText(selectedCity.getCityName());
+            currentLevel = LEVEL_COUNTRY;
+        } else {
+            queryFromServer(selectedCity.getCityCode(),"country");
+        }
     }
 
     /**
@@ -123,5 +152,91 @@ public class ChooseAreaActivity extends AppCompatActivity {
      * @param type
      */
     private void queryFromServer(final String code,final String type) {
+        String address;
+        if (!TextUtils.isEmpty(code)) {
+            address = "http://www.weather.com.cn/data/list3/city" + code + ".xml";
+        } else {
+            address = "http://www.weather.com.cn/data/list3/city.xml";
+        }
+        showProgressDialog();
+        HttpUtil.sendHttpRequest(address, new HttpCallbackListener() {
+            @Override
+            public void onFinish(String response) {
+                boolean result = false;
+                if ("province".equals(type)) {
+                    result = Utility.handleProvincesResponse(weatherReportDB, response);
+                } else if ("city".equals(type)) {
+                    result = Utility.handleCitiesResponse(weatherReportDB, response,
+                            selectedProvince.getId());
+                } else if ("country".equals(type)) {
+                    result = Utility.handleCountiesResponse(weatherReportDB, response,
+                            selectedCity.getId());
+                }
+                if (result) {
+                    //通过runOnUiThread()方法回到主线程处理逻辑
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            closeProgressDialog();
+                            if ("province".equals(type)) {
+                                queryProvinces();
+                            } else if ("city".equals(type)) {
+                                queryCities();
+                            } else if ("country".equals(type)) {
+                                queryCounties();
+                            }
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onError(Exception e) {
+               //通过runOnUiThread()方法回到主线程处理逻辑
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        closeProgressDialog();
+                        Toast.makeText(ChooseAreaActivity.this,
+                                R.string.error,Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * 显示进度对话框
+     */
+    private void showProgressDialog() {
+        if (mProgressDialog == null) {
+            mProgressDialog = new ProgressDialog(this);
+            mProgressDialog.setMessage("......");
+            mProgressDialog.setCanceledOnTouchOutside(false);
+        }
+        mProgressDialog.show();
+    }
+
+    /**
+     * 关闭进度对话框
+     */
+    private void closeProgressDialog() {
+        if (mProgressDialog != null) {
+            mProgressDialog.dismiss();
+        }
+    }
+
+    /**
+     * 捕获back按键，根据当前级别来判断，此时应该返回市列表、省列表、还是直接退出。
+     */
+    @Override
+    public void onBackPressed() {
+        if (currentLevel == LEVEL_COUNTRY) {
+            queryCities();
+        } else if (currentLevel == LEVEL_CITY) {
+            queryProvinces();
+        } else {
+            finish();
+        }
     }
 }
